@@ -1,11 +1,11 @@
-import login from './controller/loginController.js'
-import diario from './controller/diarioController.js'
-import anotacao from './controller/anotacaoController.js'
+import cadastro from './controller/cadastroController.js'
+import animais from './controller/animaisController.js'
+import noticias from './controller/noticiasController.js'
 
 export function addRoutes(api) {
-  api.use(login);
-  api.use(diario)
-  api.use(anotacao)
+  api.use(cadastro);
+  api.use(animais)
+  api.use(noticias)
  
 }
 

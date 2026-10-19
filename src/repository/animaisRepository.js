@@ -1,15 +1,6 @@
 import { con } from "./connection.js";
 
-export async function getEspecies(id_especie) {
-  const command = `
-    select *
-     from pesquisa_especie
-    where id_especie = ?
-  `
 
-  const [linhas] = await con.query(command, [id_especie])
-  return linhas[0];
-}
 
 export async function listMamiferos() {
   const command = `
@@ -71,7 +62,121 @@ export async function listInvertebrados() {
   return linhas;
 }
 
-export async function listAnimais(nome) {
+export async function listAnimais() {
+  const command = `
+    SELECT *
+    FROM (
+
+      SELECT
+        id_animal,
+        nome_popular,
+        nome_cientifico,
+        classificacao,
+        habitat,
+        alimentacao,
+        reproducao,
+        caracteristicas,
+        curiosidade,
+        classe_especie
+      FROM mamiferos
+      INNER JOIN pesquisa_especie
+      ON mamiferos.id_especie = pesquisa_especie.id_especie
+
+      UNION ALL
+
+      SELECT
+        id_animal,
+        nome_popular,
+        nome_cientifico,
+        classificacao,
+        habitat,
+        alimentacao,
+        reproducao,
+        caracteristicas,
+        curiosidade,
+        classe_especie
+      FROM aves
+      INNER JOIN pesquisa_especie
+      ON aves.id_especie = pesquisa_especie.id_especie
+
+      UNION ALL
+
+      SELECT
+        id_animal,
+        nome_popular,
+        nome_cientifico,
+        classificacao,
+        habitat,
+        alimentacao,
+        reproducao,
+        caracteristicas,
+        curiosidade,
+        classe_especie
+      FROM repteis
+      INNER JOIN pesquisa_especie
+      ON repteis.id_especie = pesquisa_especie.id_especie
+
+      UNION ALL
+
+      SELECT
+        id_animal,
+        nome_popular,
+        nome_cientifico,
+        classificacao,
+        habitat,
+        alimentacao,
+        reproducao,
+        caracteristicas,
+        curiosidade,
+        classe_especie
+      FROM anfibios
+      INNER JOIN pesquisa_especie
+      ON anfibios.id_especie = pesquisa_especie.id_especie
+
+      UNION ALL
+
+      SELECT
+        id_animal,
+        nome_popular,
+        nome_cientifico,
+        classificacao,
+        habitat,
+        alimentacao,
+        reproducao,
+        caracteristicas,
+        curiosidade,
+        classe_especie
+      FROM peixes
+      INNER JOIN pesquisa_especie
+      ON peixes.id_especie = pesquisa_especie.id_especie
+
+      UNION ALL
+
+      SELECT
+        id_animal,
+        nome_popular,
+        nome_cientifico,
+        classificacao,
+        habitat,
+        alimentacao,
+        reproducao,
+        caracteristicas,
+        curiosidade,
+        classe_especie
+      FROM invertebrados
+      INNER JOIN pesquisa_especie
+      ON invertebrados.id_especie = pesquisa_especie.id_especie
+
+    ) AS animais;
+
+   
+  `;
+
+  const [linhas] = await con.query(command);
+  return linhas;
+}
+
+export async function listAnimaisPesquisa(nome) {
   const command = `
     SELECT *
     FROM (
@@ -184,4 +289,3 @@ export async function listAnimais(nome) {
   const [linhas] = await con.query(command, [`${nome}%`]);
   return linhas;
 }
-
