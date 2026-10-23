@@ -1,13 +1,37 @@
-import * as dbCadastro from '../repository/cadastroRepository.js';
+import * as service from '../service/cadastroService.js';
 
 import { Router } from "express";
 const endpoints = Router();
 
-endpoints.post('/cadastro', async (req, resp) => {
-  let cad = req.body;
 
-  let id_usuario = await dbCadastro.criarConta(cad);
-  resp.send({ id_usuario });
+
+endpoints.post('/cadastro', async (req, resp) => {
+  try {
+    let conta = req.body;
+
+    let id = await service.saveCadastro(conta);
+    resp.send({ id });
+  }
+  catch (err) {
+    resp.status(400).send({
+      erro: err.message
+    })
+  }
+})
+
+endpoints.post('/cadastro/login', async (req, resp) => {
+  try {
+    let email = req.body.email;
+    let senha = req.body.senha_hash;
+
+    let token = await service.login(email, senha_hash);
+    resp.send({token});
+  }
+  catch (err) {
+    resp.status(401).send({
+      erro: err.message
+    })
+  }
 })
 
 endpoints.put('/email/:id', async (req, resp) => {
