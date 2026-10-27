@@ -22,7 +22,7 @@ endpoints.post('/cadastro', async (req, resp) => {
 endpoints.post('/cadastro/login', async (req, resp) => {
   try {
     let email = req.body.email;
-    let senha = req.body.senha_hash;
+    let senha_hash = req.body.senha_hash;
 
     let token = await service.login(email, senha_hash);
     resp.send({token});
