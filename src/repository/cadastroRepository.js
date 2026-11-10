@@ -1,44 +1,75 @@
-import { con } from "./connection.js";
 
-export async function criarConta(usuario_cadastro) {
-  const command = `
-    insert into usuario_cadastro (nome_usuario, email, senha_hash)
-                 values (?, ?, ?)
-  `
+import { con } from './connection.js';
 
-  const [result] = await con.query(command, [
-    usuario_cadastro.nome_usuario,
-    usuario_cadastro.email,
-    usuario_cadastro.senha_hash,
-  ]);
+export async function buscarPorEmail(email) {
+  const [linhas] = await con.execute(
+    `SELECT id_usuario, nome_usuario, email, senha_hash
+     FROM usuario_cadastro
+     WHERE email = ?
+     LIMIT 1`,
+    [email]
+  );
 
-  return result.insertId;
+  return linhas[0] ?? null;
 }
 
-export async function atualizarEmail(id_usuario, usuario_cadastro) {
-  const command = `
-    update usuario_cadastro
-       set email
-     where id_usuario = ?
-  `
+export async function buscarPorNome(nome_usuario) {
+  const [linhas] = await con.execute(
+    `SELECT id_usuario
+     FROM usuario_cadastro
+     WHERE nome_usuario = ?
+     LIMIT 1`,
+    [nome_usuario]
+  );
 
-  const [result] = await con.query(command, [
-    usuario_cadastro.email,
-    id_usuario
-  ]);
-  return result.affectedRows;
+  return linhas[0] ?? null;
 }
 
-export async function atualizarSenha(id_usuario, usuario_cadastro) {
-  const command = `
-    update usuario_cadastro
-       set senha_hash
-     where id_usuario = ?
-  `
+export async function buscarPorId(id_usuario) {
+  const [linhas] = await con.execute(
+    `SELECT id_usuario, nome_usuario, email, senha_hash
+     FROM usuario_cadastro
+     WHERE id_usuario = ?
+     LIMIT 1`,
+    [id_usuario]
+  );
 
-  const [result] = await con.query(command, [
-    usuario_cadastro.senha,
-    id_usuario
-  ]);
-  return result.affectedRows;
+  return linhas[0] ?? null;
+}
+
+export async function criarConta({
+  nome_usuario,
+  email,
+  senha_hash
+}) {
+  const [resultado] = await con.execute(
+    `INSERT INTO usuario_cadastro
+       (nome_usuario, email, senha_hash)
+     VALUES (?, ?, ?)`,
+    [nome_usuario, email, senha_hash]
+  );
+
+  return resultado.insertId;
+}
+
+export async function atualizarEmail(id_usuario, email) {
+  const [resultado] = await con.execute(
+    `UPDATE usuario_cadastro
+     SET email = ?
+     WHERE id_usuario = ?`,
+    [email, id_usuario]
+  );
+
+  return resultado.affectedRows;
+}
+
+export async function atualizarSenha(id_usuario, senha_hash) {
+  const [resultado] = await con.execute(
+    `UPDATE usuario_cadastro
+     SET senha_hash = ?
+     WHERE id_usuario = ?`,
+    [senha_hash, id_usuario]
+  );
+
+  return resultado.affectedRows;
 }

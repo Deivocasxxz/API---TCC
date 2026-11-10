@@ -1,53 +1,154 @@
-import * as service from '../service/cadastroService.js';
 
-import { Router } from "express";
+import { Router } from 'express';
+import { rateLimit } from 'express-rate-limit';
+
+import * as service from '../service/cadastroService.js';
+import { getAuthentication } from '../utils/jwt.js';
+
 const endpoints = Router();
 
+// LIMITAR TENTATIVAS DE LOGIN
+const limitarLogin = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  skipSuccessfulRequests: true,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+    erro: 'Muitas tentativas de login. Tente novamente mais tarde.'
+  }
+});
 
+// TRATAMENTO DE ERROS
+function responderErro(err, resp) {
+  if (err.code === 'ER_DUP_ENTRY') {
+    return resp.status(409).json({
+      erro: 'Email ou nome de usuário já cadastrado.'
+    });
+  }
 
+  const status =
+    Number.isInteger(err.status) &&
+    err.status >= 400 &&
+    err.status < 500
+      ? err.status
+      : 500;
+
+  if (status === 500) {
+    console.error('Erro no cadastro:', err);
+  }
+
+  return resp.status(status).json({
+    erro: status === 500
+      ? 'Erro interno do servidor.'
+      : err.message
+  });
+}
+
+// IMPEDIR ALTERAÇÕES EM CONTAS DE OUTRAS PESSOAS
+function conferirDono(req, resp) {
+  const id = Number(req.params.id);
+
+  if (!Number.isSafeInteger(id) || id < 1) {
+    resp.status(400).json({ erro: 'ID inválido.' });
+    return null;
+  }
+
+  if (id !== Number(req.user.id_usuario)) {
+    resp.status(403).json({
+      erro: 'Você só pode alterar sua própria conta.'
+    });
+    return null;
+  }
+
+  return id;
+}
+
+// CRIAR CONTA
 endpoints.post('/cadastro', async (req, resp) => {
   try {
-    let conta = req.body;
-
-    let id = await service.saveCadastro(conta);
-    resp.send({ id });
+    const id = await service.saveCadastro(req.body ?? {});
+    return resp.status(201).json({ id });
+  } catch (err) {
+    return responderErro(err, resp);
   }
-  catch (err) {
-    resp.status(400).send({
-      erro: err.message
-    })
+});
+
+// FAZER LOGIN
+endpoints.post(
+  '/cadastro/login',
+  limitarLogin,
+  async (req, resp) => {
+    try {
+      const token = await service.login(
+        req.body?.email,
+        req.body?.senha ?? req.body?.senha_hash
+      );
+
+      return resp.json({ token });
+    } catch (err) {
+      return responderErro(err, resp);
+    }
   }
-})
+);
 
-endpoints.post('/cadastro/login', async (req, resp) => {
-  try {
-    let email = req.body.email;
-    let senha_hash = req.body.senha_hash;
+// CONSULTAR O PRÓPRIO PERFIL
+endpoints.get(
+  '/cadastro/me',
+  getAuthentication(),
+  async (req, resp) => {
+    try {
+      const perfil = await service.consultarPerfil(
+        req.user.id_usuario
+      );
 
-    let token = await service.login(email, senha_hash);
-    resp.send({token});
+      return resp.json(perfil);
+    } catch (err) {
+      return responderErro(err, resp);
+    }
   }
-  catch (err) {
-    resp.status(401).send({
-      erro: err.message
-    })
+);
+
+// ATUALIZAR EMAIL
+endpoints.put(
+  '/email/:id',
+  getAuthentication(),
+  async (req, resp) => {
+    const id = conferirDono(req, resp);
+    if (id === null) return;
+
+    try {
+      const qtd = await service.alterarEmail(
+        id,
+        req.body ?? {}
+      );
+
+      return resp.json({ qtd });
+    } catch (err) {
+      return responderErro(err, resp);
+    }
   }
-})
+);
 
-endpoints.put('/email/:id', async (req, resp) => {
-  let id_usuario = req.params.id;
-  let email = req.body;
+// ATUALIZAR SENHA
+endpoints.put(
+  '/senha/:id',
+  getAuthentication(),
+  async (req, resp) => {
+    const id = conferirDono(req, resp);
+    if (id === null) return;
 
-  let qtd = await dbCadastro.atualizarEmail(id_usuario, email);
-  resp.send({ qtd })
-})
+    try {
+      const qtd = await service.alterarSenha(
+        id,
+        req.body ?? {}
+      );
 
-endpoints.put('/senha/:id', async (req, resp) => {
-  let id_usuario = req.params.id;
-  let senha = req.body;
-
-  let qtd = await dbCadastro.atualizarSenha(id_usuario, senha);
-  resp.send({ qtd })
-})
+      return resp.json({ qtd });
+    } catch (err) {
+      return responderErro(err, resp);
+    }
+  }
+);
 
 export default endpoints;

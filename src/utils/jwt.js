@@ -1,56 +1,80 @@
-import jwt from 'jsonwebtoken'
 
-const KEY = 'borapracima'
+import jwt from 'jsonwebtoken';
+import { JWT_SECRET } from './authSecret.local.js';
 
-
-export function generateToken(userInfo) {
-  if (!userInfo.role)
-    userInfo.role = 'user';
-
-  return jwt.sign(userInfo, KEY)
+if (
+  typeof JWT_SECRET !== 'string' ||
+  JWT_SECRET.length < 32 ||
+  JWT_SECRET.includes('COLE_AQUI')
+) {
+  throw new Error(
+    'Configure JWT_SECRET em src/utils/authSecret.local.js.'
+  );
 }
 
+// GERAR TOKEN
+export function generateToken(usuario) {
+  return jwt.sign(
+    {
+      id_usuario: usuario.id_usuario,
+      nome_usuario: usuario.nome_usuario,
+      role: 'user'
+    },
+    JWT_SECRET,
+    {
+      expiresIn: '2h',
+      algorithm: 'HS256'
+    }
+  );
+}
+
+// LER TOKEN
 export function getTokenInfo(req) {
-  try {
-    let token = req.headers['x-access-token'];
+  const authorization = req.headers.authorization;
 
-    if (token === undefined)
-      token = req.query['x-access-token']
+  const bearer =
+    typeof authorization === 'string'
+      ? authorization.match(/^Bearer\s+(.+)$/i)?.[1]
+      : null;
 
-    let signd = jwt.verify(token, KEY);
-    return signd;
+  const token = bearer ?? req.headers['x-access-token'];
+
+  if (typeof token !== 'string') {
+    return null;
   }
-  catch {
+
+  try {
+    return jwt.verify(token, JWT_SECRET, {
+      algorithms: ['HS256']
+    });
+  } catch {
     return null;
   }
 }
 
-export function getAuthentication(checkRole, throw401 = true) {  
+// PROTEGER ROTAS
+export function getAuthentication(checkRole, throw401 = true) {
   return (req, resp, next) => {
-    try {
-      let token = req.headers['x-access-token'];
-  
-      if (token === undefined)
-        token = req.query['x-access-token'];
-    
-      let signd = jwt.verify(token, KEY);
-    
-      req.user = signd;
-      if (checkRole && !checkRole(signd) && signd.role.type !== 'admin')
-        return resp.status(403).end();
-    
-      next();
-    }
-    catch {
-      if (throw401) {
-        let error = new Error();
-        error.stack = 'Authentication Error: JWT must be provided';
-        resp.status(401).end();
-      }
-      else {
-        next();
-      }
-    }
-  }
-}
+    const usuario = getTokenInfo(req);
 
+    if (!usuario) {
+      if (throw401) {
+        return resp.status(401).json({
+          erro: 'Token ausente, inválido ou expirado.'
+        });
+      }
+
+      return next();
+    }
+
+    req.user = usuario;
+
+    if (checkRole && !checkRole(usuario)) {
+      return resp.status(403).json({
+        erro: 'Acesso negado.'
+      });
+    }
+
+    next();
+  };
+}
