@@ -1,13 +1,15 @@
-import mysql from 'mysql2/promise'
 
-const con = await mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  database: 'rop',
-  password: 'root'
-})
+import mysql from 'mysql2/promise';
 
-console.log('Conectou com MYSQL!');
+const con = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD ?? 'root',
+    database: process.env.DB_NAME || 'rop',
+
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
 
 export { con };
-  
