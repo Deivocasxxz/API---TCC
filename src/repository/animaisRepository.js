@@ -1,291 +1,74 @@
-import { con } from "./connection.js";
+import { con } from './connection.js';
 
+// A view do banco rop reúne os seis grupos e fornece um id_catalogo
+// único para cada espécie (id_animal se repete entre as tabelas).
+const VIEW_ANIMAIS = 'vw_animais_completos';
 
+export async function listAnimais({ nome = '', categoria = '', status = '' } = {}) {
+  const filtros = [];
+  const parametros = [];
 
-export async function listMamiferos() {
-  const command = `
-    select *
-     from mamiferos
-  `
+  if (nome) {
+    filtros.push('(nome_popular LIKE ? OR nome_cientifico LIKE ?)');
+    parametros.push(`%${nome}%`, `%${nome}%`);
+  }
+  if (categoria) {
+    filtros.push('classe_especie = ?');
+    parametros.push(categoria);
+  }
+  if (status) {
+    filtros.push('status_conservacao = ?');
+    parametros.push(status);
+  }
 
-  const [linhas] = await con.query(command);
-  return linhas;
-}
-
-export async function listAves() {
-  const command = `
-    select *
-     from aves
-  `
-
-  const [linhas] = await con.query(command);
-  return linhas;
-}
-
-export async function listRepteis() {
-  const command = `
-    select *
-     from repteis
-  `
-
-  const [linhas] = await con.query(command);
-  return linhas;
-}
-
-export async function listAnfibios() {
-  const command = `
-    select *
-     from anfibios
-  `
-
-  const [linhas] = await con.query(command);
-  return linhas;
-}
-
-export async function listPeixes() {
-  const command = `
-    select *
-     from peixes
-  `
-
-  const [linhas] = await con.query(command);
-  return linhas;
-}
-
-export async function listInvertebrados() {
-  const command = `
-    select *
-     from invertebrados
-  `
-
-  const [linhas] = await con.query(command);
-  return linhas;
-}
-
-export async function listAnimais() {
-  const command = `
-    SELECT *
-    FROM (
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM mamiferos
-      INNER JOIN pesquisa_especie
-      ON mamiferos.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM aves
-      INNER JOIN pesquisa_especie
-      ON aves.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM repteis
-      INNER JOIN pesquisa_especie
-      ON repteis.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM anfibios
-      INNER JOIN pesquisa_especie
-      ON anfibios.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM peixes
-      INNER JOIN pesquisa_especie
-      ON peixes.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM invertebrados
-      INNER JOIN pesquisa_especie
-      ON invertebrados.id_especie = pesquisa_especie.id_especie
-
-    ) AS animais;
-
-   
+  const where = filtros.length ? `WHERE ${filtros.join(' AND ')}` : '';
+  const sql = `
+    SELECT * FROM ${VIEW_ANIMAIS}
+    ${where}
+    ORDER BY id_catalogo ASC
   `;
 
-  const [linhas] = await con.query(command);
+  const [linhas] = await con.query(sql, parametros);
   return linhas;
 }
 
-export async function listAnimaisPesquisa(nome) {
-  const command = `
-    SELECT *
-    FROM (
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM mamiferos
-      INNER JOIN pesquisa_especie
-      ON mamiferos.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM aves
-      INNER JOIN pesquisa_especie
-      ON aves.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM repteis
-      INNER JOIN pesquisa_especie
-      ON repteis.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM anfibios
-      INNER JOIN pesquisa_especie
-      ON anfibios.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM peixes
-      INNER JOIN pesquisa_especie
-      ON peixes.id_especie = pesquisa_especie.id_especie
-
-      UNION ALL
-
-      SELECT
-        id_animal,
-        nome_popular,
-        nome_cientifico,
-        classificacao,
-        habitat,
-        alimentacao,
-        reproducao,
-        caracteristicas,
-        curiosidade,
-        classe_especie
-      FROM invertebrados
-      INNER JOIN pesquisa_especie
-      ON invertebrados.id_especie = pesquisa_especie.id_especie
-
-    ) AS animais
-
-    WHERE nome_popular LIKE ?;
-  `;
-
-  const [linhas] = await con.query(command, [`${nome}%`]);
-  return linhas;
+export async function getAnimalPorCatalogo(idCatalogo) {
+  const [linhas] = await con.query(
+    `SELECT * FROM ${VIEW_ANIMAIS} WHERE id_catalogo = ? LIMIT 1`,
+    [idCatalogo]
+  );
+  return linhas[0] ?? null;
 }
+
+export async function estatisticasAnimais() {
+  const [totais] = await con.query(
+    `SELECT COUNT(*) AS total FROM ${VIEW_ANIMAIS}`
+  );
+  const [porCategoria] = await con.query(`
+    SELECT classe_especie AS categoria, COUNT(*) AS quantidade
+    FROM ${VIEW_ANIMAIS}
+    GROUP BY classe_especie
+    ORDER BY classe_especie
+  `);
+  const [porStatus] = await con.query(`
+    SELECT status_conservacao AS status, COUNT(*) AS quantidade
+    FROM ${VIEW_ANIMAIS}
+    GROUP BY status_conservacao
+    ORDER BY status_conservacao
+  `);
+
+  return {
+    total: Number(totais[0]?.total ?? 0),
+    por_categoria: porCategoria,
+    por_status: porStatus
+  };
+}
+
+// Mantidos para não quebrar os endpoints já existentes.
+export const listMamiferos = () => listAnimais({ categoria: 'Mamíferos' });
+export const listAves = () => listAnimais({ categoria: 'Aves' });
+export const listRepteis = () => listAnimais({ categoria: 'Répteis' });
+export const listAnfibios = () => listAnimais({ categoria: 'Anfibios' });
+export const listPeixes = () => listAnimais({ categoria: 'Peixes' });
+export const listInvertebrados = () => listAnimais({ categoria: 'Invertebrados' });
+export const listAnimaisPesquisa = (nome) => listAnimais({ nome });
