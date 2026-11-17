@@ -1,4 +1,3 @@
-
 import bcrypt from 'bcryptjs';
 import * as db from '../repository/cadastroRepository.js';
 import { generateToken } from '../utils/jwt.js';
@@ -99,7 +98,8 @@ export async function consultarPerfil(id_usuario) {
   return {
     id_usuario: usuario.id_usuario,
     nome_usuario: usuario.nome_usuario,
-    email: usuario.email
+    email: usuario.email,
+    creditos: Number(usuario.creditos)
   };
 }
 

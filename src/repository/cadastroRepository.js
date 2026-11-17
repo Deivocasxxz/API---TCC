@@ -1,4 +1,3 @@
-
 import { con } from './connection.js';
 
 export async function buscarPorEmail(email) {
@@ -27,7 +26,7 @@ export async function buscarPorNome(nome_usuario) {
 
 export async function buscarPorId(id_usuario) {
   const [linhas] = await con.execute(
-    `SELECT id_usuario, nome_usuario, email, senha_hash
+    `SELECT id_usuario, nome_usuario, email, senha_hash, creditos
      FROM usuario_cadastro
      WHERE id_usuario = ?
      LIMIT 1`,
@@ -37,11 +36,7 @@ export async function buscarPorId(id_usuario) {
   return linhas[0] ?? null;
 }
 
-export async function criarConta({
-  nome_usuario,
-  email,
-  senha_hash
-}) {
+export async function criarConta({ nome_usuario, email, senha_hash }) {
   const [resultado] = await con.execute(
     `INSERT INTO usuario_cadastro
        (nome_usuario, email, senha_hash)
